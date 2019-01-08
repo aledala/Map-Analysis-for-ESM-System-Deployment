@@ -1,0 +1,546 @@
+Implementation:
+1)Loading shape file: Shape file can be loaded in center panel. Shape file look like a database because they already contain the information and then can store into it.
+public JPanel centerPanel() {
+ file = JFileDataStoreChooser.showOpenFile("shp", null);
+        if (file == null) {
+            return null;
+        }
+ FileDataStore store = null;
+       try {
+           store = FileDataStoreFinder.getDataStore(file);
+       } catch (IOException ex) {
+           Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+       }
+        SimpleFeatureSource featureSource = null;
+       try {
+           featureSource = store.getFeatureSource();
+       } catch (IOException ex) {
+           Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+       }
+        // Create a map content and add our shapefile to it
+       maps = new DefaultMapContext();
+        maps.addLayer(featureSource,null);
+        map=new JMapPane(maps);
+ //File newFile = getNewShapeFile(file);
+        return map;
+  }
+2)Zoom in: Zoom in button performs Action on the map. Here we use,
+    import org.geotools.swing.action.ZoomInAction; 
+Here first we have to create a button, using this button we have to perform action on the map.
+This button can be added to the north panel i.e, Tool bar.
+JButton zinButton = new JButton(new ZoomInAction(map));
+        zinButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                pointtool = false;
+                pointclick = false;
+                pointflag=5;
+            }
+        });
+P1.add(zinButton);
+3)Zoom out: Zoom out button performs Action on the map. Here we use,
+    import org.geotools.swing.action.ZoomOutAction; 
+Here first we have to create a button, using this button we have to perform action on the map. This button can be added to the north panel i.e, Tool bar.
+
+JButton zoutButton = new JButton(new ZoomOutAction(map));
+        zoutButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                pointtool = false;
+                pointclick = false;
+               pointflag=4;
+            }
+        });
+P1.add(zoutButton);
+3)pan(move): Pan button performs Action on the map. Here we use,
+            import org.geotools.swing.action.PanAction; 
+Here first we have to create a button, using this button we have to perform action on the map. This button can be added to the north panel i.e, Tool bar.Map will move from one position to another position.
+
+JButton panButton = new JButton(new PanAction(map));
+ panButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                pointtool = false;
+                pointclick = false;
+                pointflag=3;
+            }
+        }); 
+P1.add(panButton);
+
+4)Info : Info button performs Action on the map. Here we use,
+            import org.geotools.swing.action.InfoAction;
+Here first we have to create a button, using this button we have to perform action on the map. This button can be added to the north panel i.e, Tool bar. This button give the information about particular place i.e, they provide latitude and longitude and displays the country name.
+
+JButton inf = new JButton(new InfoAction(map));
+        inf.setName("info");
+p1.add(inf);
+
+
+
+5)Reset:Reset button performs Action on the map. Here we use,
+            import org.geotools.swing.action.ResetAction;
+Here first we have to create a button, using this button we have to perform action on the map. This button can be added to the north panel i.e, Tool bar. 
+rs = new JButton(new ResetAction(map));
+        rs.setName("reset");
+        rs.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                pointtool = false;
+                pointclick = false;
+                pointflag=2;
+            }
+            
+        });
+p1.add(rs);
+
+6)Mouse click: When we change the cursor position it will give the latitude and longitude of that position in south panel.
+public JPanel createSouth() {
+  l1 = new JLabel();
+        map.addMouseListener(new MapMouseAdapter() {
+            public void onMouseClicked(MapMouseEvent ev) {
+                // print the screen and world position of the mouse
+                // System.out.println("mouse click at");
+                //System.out.printf("  screen: x=%d y=%d \n", ev.getX(), ev.getY());
+               
+
+ if(pointflag==0)
+                {
+                DirectPosition2D pos = ev.getWorldPos();
+                System.out.printf("  world: x=%.2f y=%.2f \n", pos.x, pos.y);
+                l1.setText("longitude: and latitude:" + pos.x + "," + pos.y);
+                }
+             //   longitude=pos.x;
+               // latitude=pos.y;
+              if (pointflag==1) {
+                    try {
+                        DirectPosition2D pos = ev.getWorldPos();
+                System.out.printf("  world: x=%.2f y=%.2f \n", pos.x, pos.y);
+                l1.setText("longitude: and latitude:" + pos.x + "," + pos.y);
+                        addPoint1(pos.x,pos.y);   
+                    } catch (IOException ex) {
+                        Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+                           }
+    } }
+
+        })
+ p3.add(l1);
+        p3.setPreferredSize(new Dimension(50, 50));
+        p3.setMinimumSize(new Dimension(60, 60));
+
+        return p3;
+
+    }
+7)Point:Create points on the map by using featuretype and featurebuilder.Pointcollection  will collect all points in to it.
+public void addPoint(double longitude, double latitude) throws IOException  {
+      try {
+   SimpleFeatureType Type = DataUtilities.createType("Location",
+                    "location:Point,"
+                    + // <- the geometry attribute: Point type
+                    "name:String,"
+                    + // <- a String attribute
+                    "number:Integer" // a number attribute
+            );
+SimpleFeatureBuilder builder = new SimpleFeatureBuilder(Type);
+            GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
+Coordinate coord = new Coordinate(longitude, latitude);   com.vividsolutions.jts.geom.Point point = geometryFactory.createPoint(coord);
+            builder.add(point);
+            coordinateVector.add(coord);
+            builder.add(flag);
+            flag++;
+SimpleFeature feature;
+            feature = builder.buildFeature(null);
+pointcollection.add(feature);
+           org.geotools.styling.Style  s;
+            s =createPStyle();
+           pLayer = new FeatureLayer(pointcollection,s);
+           maps.addLayer(pLayer);
+}
+           
+           //((FeatureLayer) pLayer).setStyle(s);	
+      }
+      catch (SchemaException ex) {
+                        Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+                    } 
+ }
+8)Line:Create lines on the map by using featuretype and featurebuilder. Linecollection  will collect all lines in to it.
+public void addLine(Coordinate[] coords) throws SchemaException {
+        GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory();
+        LineString line = geometryFactory.createLineString(coords);
+        SimpleFeatureType TYPE = DataUtilities.createType("test", "line", "the_geom:LineString");
+        SimpleFeatureBuilder featureBuilder = new              SimpleFeatureBuilder(TYPE);
+        featureBuilder.add(line);
+        SimpleFeature feature = featureBuilder.buildFeature(null);
+         linecollection.add(feature); org.geotools.styling.Style style = SLD.createLineStyle(Color.BLUE, 10);
+        Llayer=new FeatureLayer(linecollection, style);
+    maps.addLayer(Llayer);    
+    }
+Line button:
+String featureName = JOptionPane.showInputDialog(null, "enter point 1");
+           int num=Integer.parseInt(featureName);
+           String featureName1 = JOptionPane.showInputDialog(null, "enter point 2");
+           int num1=Integer.parseInt(featureName1);
+           ncor[0]=coordinateVector.elementAt(num-1);
+           ncor[1]=coordinateVector.elementAt(num1-1);
+           
+            GeometryFactory geometryFactory = JTSFactoryFinder.getGeometryFactory(null);
+           com.vividsolutions.jts.geom.Point point1 = geometryFactory.createPoint(ncor[0]);
+           lat1=point1.getX();
+           lon1=point1.getY();
+          // System.out.println(lat1);
+           //System.out.println(lon1);
+           com.vividsolutions.jts.geom.Point point2 = geometryFactory.createPoint(ncor[1]);
+           lat2=point2.getX();
+           lon2=point2.getY();             
+                   try {
+                    
+                    addLine4(ncor);
+                    distance(lat1,lon1,lat2,lon2);
+} catch (IOException ex) {
+                   Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+               }
+                    distance(lat1,lon1,lat2,lon2);
+                } catch (SchemaException ex) {
+                    Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+9)Distance:  Distance can be calculated between the points or a line.
+public void distance(double lat1,double lon1,double lat2,double lon2)
+    {
+double R = 6371e3;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+ 
+        double a = Math.pow(Math.sin(dLat / 2),2) + Math.pow(Math.sin(dLon / 2),2) * Math.cos(lat1) * Math.cos(lat2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double d= R * c;
+        System.out.println(d);
+    JLabel l3=new JLabel();
+    l3.setText("Distance:"+d);
+    p3.add(l3);
+} 
+        
+10)Area of Operation:
+An area selected in the map for operation. The area is shown inside a rectangle where the e/w systems are deployed. A line of sight line drawn between the systems if no obstruction found.
+Within an Area of Operation there will be typically main supply route along which vehicles, personnel and supplies will be transported.
+Code:
+public void createarea() throws SchemaException,IOException
+    {
+           String featureN = JOptionPane.showInputDialog(null, "enter latitude of point 1");
+           double lati1;
+               lati1 = Double.parseDouble(featureN);
+           String featureN1 = JOptionPane.showInputDialog(null, "enter longitude of point1");
+           double loni1;
+                 loni1=Double.parseDouble(featureN1);
+          String featureNa = JOptionPane.showInputDialog(null, "enter latitude of point 2");
+          double lati2=Double.parseDouble(featureNa);
+           String featureNa1 = JOptionPane.showInputDialog(null, "enter longitude of point2");
+           double loni2=Double.parseDouble(featureNa1);
+           
+              if(pointflag==1)
+              {
+                addPoint1(loni1,lati1);
+               addPoint1(loni2,lati2);
+                addPoint1(loni2-0.2,lati1+0.2);
+                addPoint1(loni1+0.2,lati2-0.2);
+              }   
+                   Coordinate[] ncor1  =
+     new Coordinate[] {new Coordinate(loni1,lati1), new Coordinate(loni2-0.2,lati1+0.2),new Coordinate(loni2,lati2),new Coordinate(loni1+0.2,lati2-0.2),new Coordinate(loni1,lati1)};
+                   addLine1(ncor1);
+}
+   
+ 11) Line of Sight:
+public void LineOfSight() throws SchemaException, IOException
+    {
+       
+         String sh1 = JOptionPane.showInputDialog(null, "enter latititude of entity(source)");
+           double slat;         
+        slat= Double.parseDouble(sh1); 
+         String sh2 = JOptionPane.showInputDialog(null, "enter longitude of entity(source)");
+           double slon;         
+        slon= Double.parseDouble(sh2); 
+         String sh3 = JOptionPane.showInputDialog(null, "enter latititude of entity(receiver)");
+           double slat1;         
+        slat1= Double.parseDouble(sh3); 
+         String sh4 = JOptionPane.showInputDialog(null, "enter longitude of entity(receiver)");
+           double slon1;         
+        slon1= Double.parseDouble(sh4); 
+        
+  String f3 = JOptionPane.showInputDialog(null, "enter height of entity deployed(receiver)");
+           //double vlon1;         
+        eht = Double.parseDouble(f3); 
+        
+  
+            
+      double mlat=midpointlat(slat,slon,slat1,slon1);
+     double mlon=midpointlon(slat,slon,slat1,slon1);
+     double mlat1=midpointlat(slat,slon,mlat,mlon);
+      double mlon1=midpointlon(slat,slon,mlat,mlon);
+      double mlat2=midpointlat(slat1,slon1,mlat,mlon);
+      double mlon2=midpointlon(slat1,slon1,mlat,mlon);
+      double mlat3=midpointlat(mlat1,mlon1,mlat,mlon);
+      double mlon3=midpointlon(mlat1,mlon1,mlat,mlon);
+       double mlat4=midpointlat(mlat2,mlon2,mlat,mlon);
+      double mlon4=midpointlon(mlat2,mlon2,mlat,mlon);
+         
+          
+           String f5 = JOptionPane.showInputDialog(null, "enter height given latitude"+mlat+"and longitude"+mlon);
+           double height1;         
+        height1= Double.parseDouble(f5);
+        String f6 = JOptionPane.showInputDialog(null, "enter height given latitude"+mlat1+"at longitude"+mlon1);
+           double height2;         
+        height2= Double.parseDouble(f6);
+        String f7 = JOptionPane.showInputDialog(null,"enter height given latitude"+mlat2+"at longitude"+mlon2);
+           double height3;         
+        height3= Double.parseDouble(f7);
+        String f8 = JOptionPane.showInputDialog(null,"enter height given latitude"+mlat3+"at longitude"+mlon3);
+           double height4;         
+        height4= Double.parseDouble(f8);
+        String f9 = JOptionPane.showInputDialog(null,"enter height given latitude"+mlat4+"at longitude"+mlon4);
+           double height5;         
+        height5= Double.parseDouble(f9);
+      //   Coordinate[] ncor1=new Coordinate[2];
+           
+          // String featureName = JOptionPane.showInputDialog(null, "enter entity point number shown");
+         /*  int num=Integer.parseInt(featureName);
+           String featureName1 = JOptionPane.showInputDialog(null, "enter entity point number shown");
+           int num1=Integer.parseInt(featureName1);*/
+          // ncor1[0]=coordinateVector.elementAt(num-1);
+         Coordinate[] ncor2;
+            ncor2 = new Coordinate[]{new Coordinate(slon,slat),new Coordinate(slon1,slat1)};
+           
+       if(height1<eht)     
+   {
+           
+        if(height2<eht)     
+               
+  { 
+       if(height3<eht)     
+               
+  {
+       
+       if(height4<eht)     
+       {
+          if(height5<eht)     
+      {
+                 
+          addLine(ncor2);
+       }
+       else
+       {
+        
+           addLine2(ncor2);
+       }
+       }
+        else
+       {
+           
+           addLine2(ncor2);
+       }
+     }
+        else
+       {
+           
+           addLine2(ncor2);
+       }
+               }
+        else
+       {
+         
+           addLine2(ncor2);
+       }
+       }
+     else
+       {
+        
+           addLine2(ncor2);
+       }
+  distance(slat,slon,slat1,slon1);             
+        
+     }
+  12)Radio Line of Sight:
+public void RLineOfSight()
+{
+ String sh1 = JOptionPane.showInputDialog(null, "enter latititude of entity(Transmitter)");
+           double slat;         
+        slat= Double.parseDouble(sh1); 
+         String sh2 = JOptionPane.showInputDialog(null, "enter longitude of entity(Transmitter)");
+           double slon;         
+        slon= Double.parseDouble(sh2); 
+         String sh3 = JOptionPane.showInputDialog(null, "enter latititude of entity(Receiver)");
+           double slat1;         
+        slat1= Double.parseDouble(sh3); 
+         String sh4 = JOptionPane.showInputDialog(null, "enter longitude of entity(Receiver)");
+           double slon1;         
+        slon1= Double.parseDouble(sh4); 
+        
+        distance(slat,slon,slat1,slon1);
+String fre1 = JOptionPane.showInputDialog(null, "enter Transmitter Frequency");
+           double fr1;         
+        fr1= Double.parseDouble(fre1);
+        String erp1 = JOptionPane.showInputDialog(null, "enter Transmitter Power");
+           double erp;         
+        erp= Double.parseDouble(erp1);
+        String sen = JOptionPane.showInputDialog(null, "enter Receiver Sensitivity");
+           double se1;         
+        se1= Double.parseDouble(sen);
+   double pathloss;
+   double p1;
+   double d1;
+   d1=distance1(slat,slon,slat1,slon1);
+   p1=Math.log(d1);
+   double p2;
+   p2=Math.log(fr1);
+ pathloss=33+20*p1+20*p2;
+double power;
+power=erp-pathloss;
+System.out.printf("log(%.3f) is %.3f%n",d, Math.log(d));
+System.out.println(se1);
+Coordinate[] ncor2;
+            ncor2 = new Coordinate[]{new Coordinate(slon,slat),new Coordinate(slon1,slat1)};
+if(power<se1)
+{
+     try {
+         addLine2(ncor2);
+     } catch (SchemaException ex) {
+         Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+     } catch (IOException ex) {
+         Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+     }
+}
+else{
+     try {
+         addLine5(ncor2);
+     } catch (SchemaException ex) {
+         Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+     } catch (IOException ex) {
+         Logger.getLogger(map.class.getName()).log(Level.SEVERE, null, ex);
+     }
+}
+
+        
+        
+}
+
+13) Creation of Frame:
+
+public map(Entity1 en1) {
+
+frame = new JFrame("MAP");
+
+frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+panel = new JPanel(new BorderLayout(5, 5));
+
+frame.setSize(5000, 5000);
+
+frame.add(panel);
+
+frame.setVisible(true);
+
+}
+
+14) Creation of Panels:
+
+public void initComponents() {
+
+p1 = new JPanel();
+
+p2 = new JPanel();
+
+p3 = new JPanel();
+
+panel.add(centerPanel(), BorderLayout.CENTER);
+
+panel.add(toolbar(), BorderLayout.NORTH);
+
+panel.add(createSouth(), BorderLayout.SOUTH);
+
+}
+
+
+15)Sample code for creation of JButton using Default Packages in Geotools: Package for Zoom In:
+
+importorg.geotools.swing.action.ZoomInAction;
+
+Creating  Zoom In Button:
+
+JButtonzinButton = new JButton(new ZoomInAction(map));
+
+ 
+16) Display latitude and longitude positions on map:
+
+DirectPosition2D pos = ev.getWorldPos(); System.out.printf(" world: x=%.2f y=%.2f \n", pos.x, pos.y); l1.setText("longitude: and latitude:" + pos.x + "," + pos.y);
+
+17) Implementation of Line Of Sight algorithm:
+
+if(height1<eht)	//then check
+
+if(height2<eht)  //then check
+
+if(height3<eht) //then check
+
+if(height4<eht)	//then check
+
+if(height5<eht)	//then check
+
+//	then add green line else
+
+//	add red line
+
+Where eht – Target height
+
+height1, height2, height3, height4, height5 are the ground elevation values in the path between transmitter and receiver.
+
+Where comparison between the ground elevation points with target height (eht) made to check Line Of Sight.
+ 
+18) Implementation for Radio Line Of Sight Algorithm:
+
+pathloss=33+20*p1+20*p2;//p1- log(distance between transmitter and receiver)
+
+double power;	//  p2-log(Transmitter frequency)
+
+power=erp-pathloss;
+
+if(power<se1)
+
+//add orange line
+
+else
+
+//add red line
+
+power- signal strength at receiver undergoing some pathloss
+
+se1-receiver sensitivity
+
+19)Entity Specification Values in Default Table Model:
+a) Add Entity Specification:
+
+DefaultTableModel model=(DefaultTableModel)entityname.getModel();
+
+if(!enname.getText().trim().equals(""))
+
+model.addRow(newObject[]{enname.getText(),lonname.getText(),latname.getText()});
+
+b) Updating Entity Specification:
+
+DefaultTableModel model=(DefaultTableModel)entityname.getModel();
+
+if(entityname.getSelectedRow()==-1)
+
+if(entityname.getRowCount()==0)
+
+lmessage.setText("Table is empty");
+
+
+
+
+
+
+            
+          
+
+
+    
+
+
+
